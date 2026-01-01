@@ -1,21 +1,9 @@
 #!/bin/bash
 #
-# release.sh - CCM Release Script
+# release.sh - CCM Release Script with Pre-checks
 #
 # Usage: ./release.sh <version>
-# Example: ./release.sh 0.2.0
-#
-# This script:
-# 1. Updates version in Makefile
-# 2. Creates git commit
-# 3. Creates git tag
-# 4. Then you push to trigger GitHub Actions
-#
-# GitHub Actions will automatically:
-# - Run tests and lint
-# - Build all platforms (linux/darwin/windows x amd64/arm64)
-# - Calculate checksums
-# - Create GitHub Release
+# Example: ./release.sh 0.3.0
 #
 
 set -e
@@ -27,84 +15,144 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-log_info() { echo -e "${BLUE}ℹ${NC} $1"; }
-log_success() { echo -e "${GREEN}✓${NC} $1"; }
-log_warn() { echo -e "${YELLOW}⚠${NC} $1"; }
-log_error() { echo -e "${RED}✗${NC} $1"; }
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Check arguments
 if [ -z "$1" ]; then
     log_error "Usage: $0 <version>"
     echo ""
-    echo "Example: $0 0.2.0"
+    echo "Example: $0 0.3.0"
+    echo "         $0 0.3.0-beta.1"
     echo ""
-    echo "Version format: MAJOR.MINOR.PATCH"
+    echo "Version format: MAJOR.MINOR.PATCH[-prerelease]"
     exit 1
 fi
 
 VERSION=$1
 
-# Validate semver format
-SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+# Validate semver format (supports prerelease)
+SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'
 if ! echo "$VERSION" | grep -qE "$SEMVER_REGEX"; then
     log_error "Invalid version format: $VERSION"
-    echo "Expected: MAJOR.MINOR.PATCH (e.g., 0.2.0)"
+    echo "Expected: MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-prerelease"
     exit 1
 fi
 
-log_info "🚀 准备发布 CCM v$VERSION"
+log_info "Preparing release CCM v$VERSION"
 echo ""
 
-# Step 1: Check git status
-log_info "1. 检查 git 状态..."
-if [ -n "$(git status --porcelain)" ]; then
-    log_warn "有未提交的更改:"
-    git status --short
-    echo ""
-    read -p "继续? [y/N] " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_error "已取消"
-        exit 1
-    fi
+# Step 1: Check dependencies
+log_info "Step 1/6: Checking dependencies..."
+MISSING_DEPS=""
+
+if ! command -v go &> /dev/null; then
+    MISSING_DEPS="$MISSING_DEPS go"
 fi
 
-# Step 2: Update version
-log_info "2. 更新版本号..."
-sed -i "s/^VERSION := .*/VERSION := $VERSION/" Makefile
-log_success "版本已更新"
+if ! command -v golangci-lint &> /dev/null; then
+    log_warn "golangci-lint not found, skipping lint check"
+    SKIP_LINT=true
+fi
 
-# Step 3: Create commit
-log_info "3. 创建 commit..."
-git add -A
-git commit -m "Release v$VERSION" --quiet
-log_success "Commit created: $(git rev-parse --short HEAD)"
+if ! command -v goreleaser &> /dev/null; then
+    log_warn "goreleaser not found, skipping local config validation"
+    SKIP_GORELEASER=true
+fi
 
-# Step 4: Create tag
-log_info "4. 创建 tag..."
-git tag -a "v$VERSION" -m "Release v$VERSION" --quiet
+if [ -n "$MISSING_DEPS" ]; then
+    log_error "Missing required dependencies:$MISSING_DEPS"
+    exit 1
+fi
+log_success "Dependencies OK"
+
+# Step 2: Check git status
+log_info "Step 2/6: Checking git status..."
+if [ -n "$(git status --porcelain)" ]; then
+    log_error "Working directory is not clean:"
+    git status --short
+    echo ""
+    read -p "Continue anyway? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_error "Aborted"
+        exit 1
+    fi
+else
+    log_success "Working directory clean"
+fi
+
+# Step 3: Check if tag exists
+log_info "Step 3/6: Checking for existing tag..."
+if git tag -l "v$VERSION" | grep -q "v$VERSION"; then
+    log_error "Tag v$VERSION already exists"
+    exit 1
+fi
+log_success "Tag v$VERSION is available"
+
+# Step 4: Run tests
+log_info "Step 4/6: Running tests..."
+if ! go test ./...; then
+    log_error "Tests failed"
+    exit 1
+fi
+log_success "Tests passed"
+
+# Step 5: Run linter
+log_info "Step 5/6: Running linter..."
+if [ "$SKIP_LINT" != "true" ]; then
+    if ! golangci-lint run --timeout 5m; then
+        log_error "Linter found issues"
+        exit 1
+    fi
+    log_success "Linter passed"
+else
+    log_warn "Linter skipped"
+fi
+
+# Step 6: Validate GoReleaser config
+log_info "Step 6/6: Validating GoReleaser config..."
+if [ "$SKIP_GORELEASER" != "true" ]; then
+    if ! goreleaser check; then
+        log_error "GoReleaser config invalid"
+        exit 1
+    fi
+    log_success "GoReleaser config valid"
+else
+    log_warn "GoReleaser validation skipped"
+fi
+
+echo ""
+echo "========================================"
+log_success "All pre-checks passed!"
+echo "========================================"
+echo ""
+
+# Create tag
+log_info "Creating tag v$VERSION..."
+git tag -a "v$VERSION" -m "Release v$VERSION"
 log_success "Tag created: v$VERSION"
 
 echo ""
-echo "========================================"
-log_success "Release v$VERSION 已准备就绪!"
-echo "========================================"
-echo ""
-echo "📝 下一步:"
+echo "Next steps:"
 echo "   git push origin main && git push origin v$VERSION"
 echo ""
-echo "🤖 GitHub Actions 将自动:"
-echo "   ✓ 运行测试和 lint"
-echo "   ✓ 编译 6 个平台"
-echo "   ✓ 计算 checksums"
-echo "   ✓ 创建 GitHub Release"
+echo "GitHub Actions will automatically:"
+echo "   - Run tests and lint"
+echo "   - Build for all 6 platforms"
+echo "   - Create GitHub Release with changelog"
+echo "   - Update Homebrew formula"
 echo ""
-read -p "立即推送到远程? [y/N] " -n 1 -r
+
+read -p "Push to remote now? [y/N] " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     git push origin main
     git push origin "v$VERSION"
-    log_success "已推送! GitHub Actions 正在运行..."
+    log_success "Pushed! GitHub Actions is running..."
     echo ""
-    echo "🎉 Release 页面: https://github.com/taliove/go-claude-model/releases/tag/v$VERSION"
+    echo "Release page: https://github.com/taliove/go-claude-model/releases/tag/v$VERSION"
+    echo "Actions: https://github.com/taliove/go-claude-model/actions"
 fi

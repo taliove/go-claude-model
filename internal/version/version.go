@@ -1,7 +1,8 @@
 package version
 
+// Version info is set at build time via ldflags
 var (
-	Version = "0.1.0"
-	Commit  = ""
-	Date    = ""
+	Version = "dev"
+	Commit  = "none"
+	Date    = "unknown"
 )

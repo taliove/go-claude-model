@@ -11,7 +11,9 @@
       "Bash(go:*)",
       "Bash(wc:*)",
       "Bash(./ccm:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(git -C /home/tangfan/code/go-claude-model log --oneline -20)",
+      "Bash(git -C /home/tangfan/code/go-claude-model tag -l)"
     ]
   }
 }

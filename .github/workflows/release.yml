@@ -5,56 +5,66 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
-  # Build and create release
-  release:
+  # Pre-release checks - must pass before release
+  pre-checks:
+    name: Pre-release Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache: true
 
-      - name: Build releases
-        run: make release
-
-      - name: Calculate checksums
-        working-directory: dist
+      - name: Validate tag format
         run: |
-          sha256sum ccm-* > checksums.txt
-          echo "=== checksums.txt ==="
-          cat checksums.txt
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-          draft: false
-          prerelease: false
-          body_path: .github/release-body.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Run tests (independent job, can fail without blocking release)
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
+          TAG=${GITHUB_REF#refs/tags/}
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Invalid tag format: $TAG"
+            echo "Expected format: vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-prerelease"
+            exit 1
+          fi
+          echo "Tag format valid: $TAG"
 
       - name: Run tests
-        run: go test ./...
+        run: go test -v -race ./...
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v3
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v6
         with:
           version: latest
           args: --timeout 5m
+
+  # Release with GoReleaser
+  release:
+    name: Release
+    needs: pre-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

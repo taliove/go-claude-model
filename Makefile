@@ -6,128 +6,102 @@
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
-BINDIR_INSTALL ?= $(HOME)/.claude-model/bin
-CONFIGDIR ?= $(HOME)/.claude-model/configs
-
-# Output directory for releases
-DIST_DIR ?= dist
-
-# Version info (can be overridden at build time)
-VERSION := 0.2.0
-COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown")
-
-# Build flags
-LDFLAGS := -s -w -X ccm/internal/version.Version=$(VERSION) -X ccm/internal/version.Commit=$(COMMIT) -X ccm/internal/version.Date=$(DATE)
+BINDIR_INSTALL ?= $(HOME)/.local/bin
 
 # ===========================================
 # Build Targets
 # ===========================================
 
-.PHONY: all build clean install uninstall install-global uninstall-global install-completion release
+.PHONY: all build clean install uninstall install-global uninstall-global \
+        test lint fmt tidy release-local check help
 
 all: build
 
-# Local build (outputs to project root for development)
+# Local build (for development)
 build:
-	go build -ldflags="$(LDFLAGS)" -o ccm .
+	go build -o ccm .
 
 clean:
 	rm -f ccm
-	rm -rf $(DIST_DIR)
+	rm -rf dist
+
+# ===========================================
+# Testing & Quality
+# ===========================================
+
+test:
+	go test -v -race ./...
+
+lint:
+	golangci-lint run --timeout 5m
+
+fmt:
+	go fmt ./...
+
+tidy:
+	go mod tidy
 
 # ===========================================
 # Installation
 # ===========================================
 
-# Local installation (to ~/.claude-model/bin)
-install:
+# Local installation (to ~/.local/bin)
+install: build
 	@echo "Installing CCM to $(BINDIR_INSTALL)..."
 	install -d $(BINDIR_INSTALL)
 	install -m 755 ccm $(BINDIR_INSTALL)/ccm
 	@echo ""
-	@echo "✓ CCM installed successfully!"
-	@echo ""
-	@if [ "$(BINDIR_INSTALL)" != "/usr/local/bin" ] && [ "$(shell which ccm 2>/dev/null)" = "" ]; then \
-		echo "💡 To use CCM, add to PATH:"; \
-		echo "   export PATH=\"$(BINDIR_INSTALL):\$$PATH\""; \
-		echo ""; \
-		echo "   Add to ~/.bashrc or ~/.zshrc:"; \
-		echo "   echo 'export PATH=\"$(BINDIR_INSTALL):\$$PATH\"' >> ~/.bashrc"; \
-	fi
+	@echo "CCM installed successfully!"
 
-# Local uninstall
 uninstall:
-	@echo "Removing CCM..."
 	rm -f $(BINDIR_INSTALL)/ccm
-	@echo "✓ CCM uninstalled"
 
 # Global installation (to /usr/local/bin)
-install-global:
+install-global: build
 	@echo "Installing CCM globally to $(BINDIR)..."
 	install -d $(BINDIR)
 	install -m 755 ccm $(BINDIR)/ccm
-	@echo "✓ CCM installed to $(BINDIR)/ccm"
+	@echo "CCM installed to $(BINDIR)/ccm"
 
-# Global uninstall
 uninstall-global:
-	@echo "Removing CCM from $(BINDIR)..."
 	rm -f $(BINDIR)/ccm
-	@echo "✓ CCM uninstalled"
 
-# Shell completion installation
-install-completion:
-	@echo "Installing shell completion..."
-	install -d $(HOME)/.zsh/completion
-	install -m 644 scripts/completion.zsh $(HOME)/.zsh/completion/_ccm
-	@echo "✓ Shell completion installed"
+# ===========================================
+# Release (GoReleaser)
+# ===========================================
+
+# Test GoReleaser locally (snapshot build)
+release-local:
+	goreleaser release --snapshot --clean
+
+# Validate GoReleaser config
+check:
+	goreleaser check
+
+# ===========================================
+# Help
+# ===========================================
+
+help:
+	@echo "CCM Makefile targets:"
 	@echo ""
-	@echo "💡 Add to ~/.zshrc:"
-	@echo "   autoload -U compinit"
-	@echo "   compinit"
-
-# Full installation (binary + completion)
-install-all: install install-completion
+	@echo "  Build:"
+	@echo "    build          - Build binary for local development"
+	@echo "    clean          - Remove build artifacts"
 	@echo ""
-	@echo "✓ Full installation complete!"
-
-# ===========================================
-# Release & Distribution
-# ===========================================
-
-# Release builds for all platforms (outputs to dist/)
-release:
-	@echo "🔨 Building releases to $(DIST_DIR)/..."
-	@mkdir -p $(DIST_DIR)
-	GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-linux-amd64 .
-	GOOS=linux GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-linux-arm64 .
-	GOOS=darwin GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-darwin-amd64 .
-	GOOS=darwin GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-darwin-arm64 .
-	GOOS=windows GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-windows-amd64.exe .
-	GOOS=windows GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-windows-arm64.exe .
+	@echo "  Quality:"
+	@echo "    test           - Run tests"
+	@echo "    lint           - Run linter"
+	@echo "    fmt            - Format code"
+	@echo "    tidy           - Tidy go.mod"
 	@echo ""
-	@echo "✓ Built releases to $(DIST_DIR)/"
-
-# Calculate checksums
-checksum:
-	@echo "📝 Calculating checksums..."
-	cd $(DIST_DIR) && \
-	sha256sum ccm-* > checksums.txt 2>/dev/null || shasum -a 256 ccm-* > checksums.txt
-	@echo "✓ checksums.txt created in $(DIST_DIR)/"
-
-# Clean release artifacts
-release-clean:
-	rm -rf $(DIST_DIR)
-
-# ===========================================
-# Development Helper
-# ===========================================
-
-# Default GitHub user (can be overridden)
-GITHUB_USER ?= taliove
-
-# Show version info
-version:
-	@echo "Version: $(VERSION)"
-	@echo "Commit:  $(COMMIT)"
-	@echo "Date:    $(DATE)"
+	@echo "  Install:"
+	@echo "    install        - Install to ~/.local/bin"
+	@echo "    uninstall      - Uninstall from ~/.local/bin"
+	@echo "    install-global - Install to /usr/local/bin"
+	@echo ""
+	@echo "  Release:"
+	@echo "    release-local  - Test GoReleaser locally"
+	@echo "    check          - Validate GoReleaser config"
+	@echo ""
+	@echo "  For actual releases, use: ./scripts/release.sh <version>"
