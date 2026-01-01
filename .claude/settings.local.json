@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod tidy:*)",
+      "Bash(go build:*)",
+      "Bash(./ccm --help:*)",
+      "Bash(./ccm list:*)",
+      "Bash(./ccm generate:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(go:*)",
+      "Bash(wc:*)"
+    ]
+  }
+}
