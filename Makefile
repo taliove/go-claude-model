@@ -13,7 +13,7 @@ CONFIGDIR ?= $(HOME)/.claude-model/configs
 DIST_DIR ?= dist
 
 # Version info (can be overridden at build time)
-VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+VERSION := 0.2.0
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown")
 
