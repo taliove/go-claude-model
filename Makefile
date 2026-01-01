@@ -1,10 +1,16 @@
 # CCM (Claude Code Manager) Makefile
 
+# ===========================================
 # Configuration
+# ===========================================
+
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 BINDIR_INSTALL ?= $(HOME)/.claude-model/bin
 CONFIGDIR ?= $(HOME)/.claude-model/configs
+
+# Output directory for releases
+DIST_DIR ?= dist
 
 # Version info (can be overridden at build time)
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -14,15 +20,25 @@ DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown")
 # Build flags
 LDFLAGS := -s -w -X ccm/internal/version.Version=$(VERSION) -X ccm/internal/version.Commit=$(COMMIT) -X ccm/internal/version.Date=$(DATE)
 
-.PHONY: all build clean install uninstall install-global uninstall-global install-completion
+# ===========================================
+# Build Targets
+# ===========================================
+
+.PHONY: all build clean install uninstall install-global uninstall-global install-completion release
 
 all: build
 
+# Local build (outputs to project root for development)
 build:
 	go build -ldflags="$(LDFLAGS)" -o ccm .
 
 clean:
 	rm -f ccm
+	rm -rf $(DIST_DIR)
+
+# ===========================================
+# Installation
+# ===========================================
 
 # Local installation (to ~/.claude-model/bin)
 install:
@@ -79,47 +95,39 @@ install-all: install install-completion
 # Release & Distribution
 # ===========================================
 
-# Cross-compile for all platforms
-release-all: clean build
+# Release builds for all platforms (outputs to dist/)
+release:
+	@echo "🔨 Building releases to $(DIST_DIR)/..."
+	@mkdir -p $(DIST_DIR)
+	GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-linux-amd64 .
+	GOOS=linux GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-linux-arm64 .
+	GOOS=darwin GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-darwin-amd64 .
+	GOOS=darwin GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-darwin-arm64 .
+	GOOS=windows GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-windows-amd64.exe .
+	GOOS=windows GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/ccm-windows-arm64.exe .
 	@echo ""
-	@echo "🔨 Building for all platforms..."
-	@for os in linux darwin windows; do \
-		for arch in amd64 arm64; do \
-			if [ "$$os" = "windows" ]; then \
-				ext=".exe"; \
-			else \
-				ext=""; \
-			fi; \
-			echo "  Building $$os/$$arch..."; \
-			GOOS=$$os GOARCH=$$arch go build -ldflags="$(LDFLAGS)" -o "ccm-$$os-$$arch$$ext" .; \
-		done; \
-	done
-	@echo ""
-	@echo "✓ Built: ccm-linux-amd64, ccm-linux-arm64, ccm-darwin-amd64, ccm-darwin-arm64, ccm-windows-amd64.exe, ccm-windows-arm64.exe"
+	@echo "✓ Built releases to $(DIST_DIR)/"
 
 # Calculate checksums
 checksum:
 	@echo "📝 Calculating checksums..."
+	cd $(DIST_DIR) && \
 	sha256sum ccm-* > checksums.txt 2>/dev/null || shasum -a 256 ccm-* > checksums.txt
-	@echo "✓ checksums.txt created"
+	@echo "✓ checksums.txt created in $(DIST_DIR)/"
 
 # Clean release artifacts
 release-clean:
-	rm -f ccm-*
-	rm -f checksums.txt
+	rm -rf $(DIST_DIR)
 
-# Publish helper - shows next steps
-publish: release-all checksum
-	@echo ""
-	@echo "🎉 Release artifacts ready!"
-	@echo ""
-	@echo "Next steps:"
-	@echo "1. Go to: https://github.com/$(GITHUB_USER)/go-claude-model/releases/new"
-	@echo "2. Upload: ccm-*, checksums.txt"
-	@echo "3. Update formula/ccm.rb with new SHA256 (run: grep 'sha256' checksums.txt)"
-	@echo ""
-	@echo "💡 To create a tag and push:"
-	@echo "   git tag v$(VERSION) && git push origin v$(VERSION)"
+# ===========================================
+# Development Helper
+# ===========================================
 
 # Default GitHub user (can be overridden)
 GITHUB_USER ?= taliove
+
+# Show version info
+version:
+	@echo "Version: $(VERSION)"
+	@echo "Commit:  $(COMMIT)"
+	@echo "Date:    $(DATE)"
