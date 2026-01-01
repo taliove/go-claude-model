@@ -1,0 +1,109 @@
+# GoReleaser configuration for CCM
+# https://goreleaser.com/
+
+project_name: ccm
+
+# Build configuration
+builds:
+  - id: ccm
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -s -w
+    ldflags:
+      - -s -w
+      - -X ccm/internal/version.Version={{.Version}}
+      - -X ccm/internal/version.Commit={{.Commit}}
+      - -X ccm/internal/version.Date={{.Date}}
+    binary: ccm
+
+# Archive configuration
+archives:
+  - id: ccm
+    name: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: gz
+    wrap_in_shell_script: true
+    shell_script_template: |
+      #!/bin/bash
+      set -e
+
+      echo "Installing CCM {{.Version}} for {{.Os}}/{{.Arch}}..."
+
+      # Detect installation directory
+      INSTALL_DIR="${HOME}/.claude-model/bin"
+      if [ -w "/usr/local/bin" ]; then
+        INSTALL_DIR="/usr/local/bin"
+      fi
+
+      # Create directory
+      mkdir -p "$INSTALL_DIR"
+
+      # Install binary
+      echo "Installing to $INSTALL_DIR/ccm..."
+      cat <<'EOF' > "$INSTALL_DIR/ccm"
+      {{ .Binary }}
+      EOF
+      chmod +x "$INSTALL_DIR/ccm"
+
+      echo ""
+      echo "✓ CCM installed to $INSTALL_DIR/ccm"
+      echo ""
+      echo "💡 Add to PATH if needed:"
+      echo "   export PATH=\"$INSTALL_DIR:\$PATH\""
+
+# Checksum configuration
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+# Snapshot configuration
+snapshot:
+  name_template: "{{ .ProjectName }}_snapshot_{{ .Commit }}"
+
+# Release configuration
+release:
+  github:
+    owner: taliove
+    name: go-claude-model
+  draft: true
+  # Use the release template
+  header: |
+    ## Installation
+
+    ### macOS / Linux
+    ```bash
+    curl -fsSL https://github.com/taliove/go-claude-model/releases/download/v{{.Version}}/ccm -o ccm
+    chmod +x ccm
+    sudo mv ccm /usr/local/bin/
+    ```
+
+    ### Windows
+    Download `ccm-windows-*.exe`
+
+  # Custom changelog (optional)
+  # changelog: |
+  #   ## Changes
+
+# Homebrew formula (optional)
+# brew:
+#   github:
+#     owner: taliove
+#     name: ccm
+#   folder: Formula
+#   homepage: https://github.com/taliove/go-claude-model
+#   description: Claude Code Manager - Manage multiple AI model providers
+#   license: MIT
+
+# Announcements (optional)
+#   discord:
+#     enabled: true
+#     message_template: |
+#       🎉 CCM {{.Version}} is now available!
+#       {{.ReleaseURL}}

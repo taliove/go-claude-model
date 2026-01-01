@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"ccm/internal/provider"
 
@@ -74,7 +75,8 @@ func Save(cfg *Config) error {
 		return err
 	}
 
-	return os.WriteFile(configFile, data, 0644)
+	// 使用 0600 权限，仅所有者可读写
+	return os.WriteFile(configFile, data, 0600)
 }
 
 // GetProvider 获取指定供应商配置（合并预置和用户配置）
@@ -113,4 +115,34 @@ func IsConfigured(name string) bool {
 
 	p, ok := cfg.Providers[name]
 	return ok && p.APIKey != ""
+}
+
+// GetEnvAPIKey 从环境变量获取 API Key
+// 环境变量格式: CCM_API_KEY_<NAME> (如 CCM_API_KEY_DOUBAO)
+func GetEnvAPIKey(name string) string {
+	envName := "CCM_API_KEY_" + strings.ToUpper(name)
+	return os.Getenv(envName)
+}
+
+// GetEffectiveAPIKey 获取有效的 API Key
+// 优先使用环境变量，其次使用配置文件
+func GetEffectiveAPIKey(name string) string {
+	// 优先环境变量
+	envKey := GetEnvAPIKey(name)
+	if envKey != "" {
+		return envKey
+	}
+
+	// 从配置文件获取
+	cfg, err := Load()
+	if err != nil {
+		return ""
+	}
+
+	p, ok := cfg.Providers[name]
+	if !ok {
+		return ""
+	}
+
+	return p.APIKey
 }

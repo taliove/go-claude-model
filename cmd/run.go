@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"ccm/internal/config"
@@ -35,9 +36,28 @@ var runCmd = &cobra.Command{
 
 		// 检查供应商是否已配置
 		p, ok := cfg.Providers[name]
-		if !ok || p.APIKey == "" {
+		if !ok {
 			fmt.Fprintf(os.Stderr, "%s 供应商 '%s' 未配置\n", red("错误:"), name)
 			fmt.Fprintf(os.Stderr, "请先运行: ccm add %s --key \"你的API密钥\"\n", name)
+			os.Exit(1)
+		}
+
+		// 获取 API Key (支持环境变量)
+		apiKey := config.GetEffectiveAPIKey(name)
+		if apiKey == "" {
+			fmt.Fprintf(os.Stderr, "%s 供应商 '%s' 未设置 API Key\n", red("错误:"), name)
+			fmt.Fprintf(os.Stderr, "请先运行: ccm add %s --key \"你的API密钥\"\n", name)
+			fmt.Fprintf(os.Stderr, "或设置环境变量: export CCM_API_KEY_%s=\"your-key\"\n", strings.ToUpper(name))
+			os.Exit(1)
+		}
+
+		// 检查 npm 是否安装
+		if !hasNPM() {
+			fmt.Fprintln(os.Stderr, red("错误: 未找到 npm 命令"))
+			fmt.Fprintln(os.Stderr, "💡 解决方案:")
+			fmt.Fprintln(os.Stderr, "   - macOS: brew install node")
+			fmt.Fprintln(os.Stderr, "   - Ubuntu/Debian: sudo apt install npm")
+			fmt.Fprintln(os.Stderr, "   - Fedora: sudo dnf install nodejs")
 			os.Exit(1)
 		}
 
@@ -45,15 +65,14 @@ var runCmd = &cobra.Command{
 		claudeBin := findClaudeBin()
 		if claudeBin == "" {
 			fmt.Fprintln(os.Stderr, red("错误: 未找到 claude 命令"))
-			fmt.Fprintln(os.Stderr, "请先安装 Claude Code:")
-			fmt.Fprintln(os.Stderr, "  npm install -g @anthropic-ai/claude-code")
-			fmt.Fprintln(os.Stderr, "或在本地安装:")
-			fmt.Fprintln(os.Stderr, "  cd ~/claude-model && npm install @anthropic-ai/claude-code")
+			fmt.Fprintln(os.Stderr, "💡 解决方案:")
+			fmt.Fprintln(os.Stderr, "   全局安装: npm install -g @anthropic-ai/claude-code")
+			fmt.Fprintln(os.Stderr, "   本地安装: cd ~/claude-model && npm install @anthropic-ai/claude-code")
 			os.Exit(1)
 		}
 
 		// 设置环境变量
-		os.Setenv("ANTHROPIC_AUTH_TOKEN", p.APIKey)
+		os.Setenv("ANTHROPIC_AUTH_TOKEN", apiKey)
 		os.Setenv("ANTHROPIC_BASE_URL", p.BaseURL)
 		os.Setenv("ANTHROPIC_MODEL", p.Model)
 		os.Setenv("API_TIMEOUT_MS", "300000")
@@ -93,6 +112,17 @@ func findClaudeBin() string {
 	}
 
 	return ""
+}
+
+// hasNPM 检查 npm 是否已安装
+func hasNPM() bool {
+	_, err := exec.LookPath("npm")
+	return err == nil
+}
+
+// getOSType 获取操作系统类型
+func getOSType() string {
+	return strings.ToLower(strings.SplitN(os.Getenv("OSTYPE"), ";", 2)[0])
 }
 
 func init() {

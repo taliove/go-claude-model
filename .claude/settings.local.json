@@ -9,7 +9,9 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "Bash(go:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(./ccm:*)",
+      "Bash(make:*)"
     ]
   }
 }
