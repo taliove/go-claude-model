@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	newAPIKey string
+	newAPIKey  string
 	newBaseURL string
-	newModel string
+	newModel   string
 )
 
 var editCmd = &cobra.Command{

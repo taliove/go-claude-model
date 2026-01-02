@@ -80,7 +80,7 @@ var runCmd = &cobra.Command{
 		// 设置独立的配置目录
 		home, _ := os.UserHomeDir()
 		configDir := filepath.Join(home, "claude-model", "configs", ".claude-"+name)
-		os.MkdirAll(configDir, 0755)
+		_ = os.MkdirAll(configDir, 0755)
 		os.Setenv("CLAUDE_CONFIG_DIR", configDir)
 
 		// 获取剩余参数传递给 claude
@@ -118,11 +118,6 @@ func findClaudeBin() string {
 func hasNPM() bool {
 	_, err := exec.LookPath("npm")
 	return err == nil
-}
-
-// getOSType 获取操作系统类型
-func getOSType() string {
-	return strings.ToLower(strings.SplitN(os.Getenv("OSTYPE"), ";", 2)[0])
 }
 
 func init() {

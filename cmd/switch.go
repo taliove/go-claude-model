@@ -98,7 +98,7 @@ var switchCmd = &cobra.Command{
 		input = strings.TrimSpace(input)
 
 		var selectedIdx int
-		fmt.Sscanf(input, "%d", &selectedIdx)
+		_, _ = fmt.Sscanf(input, "%d", &selectedIdx)
 
 		if selectedIdx < 1 || selectedIdx > len(allProviders) {
 			fmt.Println("无效的选择")

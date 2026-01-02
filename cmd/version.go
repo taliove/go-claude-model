@@ -12,7 +12,7 @@ import (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "显示版本信息",
-	Long: `显示 CCM 的版本信息，包括版本号、Commit ID、构建时间和 Go 版本`,
+	Long:  `显示 CCM 的版本信息，包括版本号、Commit ID、构建时间和 Go 版本`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("CCM (Claude Code Manager)")
 		fmt.Println("=========================")

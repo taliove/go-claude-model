@@ -116,7 +116,7 @@ var generateCmd = &cobra.Command{
 			fmt.Println()
 			fmt.Println(cyan("将以下行添加到你的 ~/.bashrc 或 ~/.zshrc:"))
 			fmt.Println()
-			fmt.Printf("  %s\n", gray(fmt.Sprintf(`export PATH="$HOME/claude-model/bin:$PATH"`)))
+			fmt.Printf("  %s\n", gray(`export PATH="$HOME/claude-model/bin:$PATH"`))
 			fmt.Println()
 			fmt.Println("然后重启终端或执行: source ~/.bashrc")
 		}

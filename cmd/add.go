@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	apiKey  string
-	baseURL string
-	model   string
+	apiKey   string
+	baseURL  string
+	model    string
 	forceAdd bool
 )
 
