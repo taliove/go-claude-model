@@ -15,17 +15,37 @@ import (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run <name>",
+	Use:   "run [name]",
 	Short: "使用指定供应商启动 Claude Code",
 	Long: `使用指定供应商启动 Claude Code
 
+如果不指定供应商名称，则使用默认供应商。
+使用 'ccm default <name>' 设置默认供应商。
+
 示例:
+  ccm run              使用默认供应商启动
   ccm run doubao       使用豆包启动
   ccm run deepseek     使用 DeepSeek 启动`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		name := args[0]
 		red := color.New(color.FgRed).SprintFunc()
+		cyan := color.New(color.FgCyan).SprintFunc()
+
+		var name string
+		if len(args) > 0 {
+			name = args[0]
+		} else {
+			// 使用默认供应商
+			name = config.GetDefault()
+			if name == "" {
+				fmt.Fprintf(os.Stderr, "%s 未指定供应商，且未设置默认供应商\n", red("错误:"))
+				fmt.Fprintf(os.Stderr, "\n使用方法:\n")
+				fmt.Fprintf(os.Stderr, "  %s        指定供应商启动\n", cyan("ccm run <name>"))
+				fmt.Fprintf(os.Stderr, "  %s  设置默认供应商\n", cyan("ccm default <name>"))
+				os.Exit(1)
+			}
+			fmt.Printf("使用默认供应商: %s\n\n", cyan(name))
+		}
 
 		// 加载配置
 		cfg, err := config.Load()

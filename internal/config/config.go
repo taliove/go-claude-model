@@ -13,6 +13,7 @@ import (
 // Config 用户配置
 type Config struct {
 	Providers map[string]provider.Provider `yaml:"providers"`
+	Default   string                       `yaml:"default,omitempty"` // 默认供应商
 }
 
 // 配置文件路径
@@ -145,4 +146,24 @@ func GetEffectiveAPIKey(name string) string {
 	}
 
 	return p.APIKey
+}
+
+// SetDefault 设置默认供应商
+func SetDefault(name string) error {
+	cfg, err := Load()
+	if err != nil {
+		return err
+	}
+
+	cfg.Default = name
+	return Save(cfg)
+}
+
+// GetDefault 获取默认供应商
+func GetDefault() string {
+	cfg, err := Load()
+	if err != nil {
+		return ""
+	}
+	return cfg.Default
 }

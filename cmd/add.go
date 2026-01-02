@@ -34,6 +34,8 @@ var addCmd = &cobra.Command{
 		green := color.New(color.FgGreen).SprintFunc()
 		yellow := color.New(color.FgYellow).SprintFunc()
 		red := color.New(color.FgRed).SprintFunc()
+		cyan := color.New(color.FgCyan).SprintFunc()
+		gray := color.New(color.FgHiBlack).SprintFunc()
 
 		if apiKey == "" {
 			fmt.Fprintln(os.Stderr, red("错误: 必须提供 --key 参数"))
@@ -89,10 +91,10 @@ var addCmd = &cobra.Command{
 		fmt.Printf("  API URL: %s\n", p.BaseURL)
 		fmt.Printf("  模型: %s\n", p.Model)
 		fmt.Println()
-		fmt.Println("📖 下一步操作:")
-		fmt.Printf("  ccm run %s              # 启动 Claude Code\n", name)
-		fmt.Printf("  ccm test %s             # 测试连接\n", name)
-		fmt.Printf("  ccm list                # 查看所有供应商\n")
+		fmt.Println(cyan("下一步操作:"))
+		fmt.Printf("  %s             # 测试连接\n", gray(fmt.Sprintf("ccm test %s", name)))
+		fmt.Printf("  %s          # 设置为默认\n", gray(fmt.Sprintf("ccm default %s", name)))
+		fmt.Printf("  %s              # 启动 Claude Code\n", gray(fmt.Sprintf("ccm run %s", name)))
 	},
 }
 

@@ -20,14 +20,22 @@ var listCmd = &cobra.Command{
 		cyan := color.New(color.FgCyan).SprintFunc()
 		gray := color.New(color.FgHiBlack).SprintFunc()
 		yellow := color.New(color.FgYellow).SprintFunc()
+		magenta := color.New(color.FgMagenta).SprintFunc()
+
+		cfg, _ := config.Load()
 
 		fmt.Println()
 		fmt.Println(cyan("供应商列表:"))
 		fmt.Println()
 
+		// 显示默认供应商
+		if cfg.Default != "" {
+			fmt.Printf("  %s 默认: %s\n", yellow("★"), cyan(cfg.Default))
+			fmt.Println()
+		}
+
 		for _, name := range provider.PresetOrder {
 			preset := provider.Presets[name]
-			cfg, _ := config.Load()
 			p, hasProvider := cfg.Providers[name]
 			configured := hasProvider && p.APIKey != ""
 
@@ -38,7 +46,19 @@ var listCmd = &cobra.Command{
 				statusText = green("已配置")
 			}
 
-			fmt.Printf("  %s %-12s %s %s\n", status, name, preset.DisplayName, statusText)
+			// 供应商类型标签
+			typeLabel := ""
+			if preset.Type == provider.TypeProxy {
+				typeLabel = magenta(" [代理]")
+			}
+
+			// 默认标记
+			defaultMark := ""
+			if cfg.Default == name {
+				defaultMark = yellow(" ★")
+			}
+
+			fmt.Printf("  %s %-12s %s%s %s%s\n", status, name, preset.DisplayName, typeLabel, statusText, defaultMark)
 
 			if configured {
 				// 显示已配置详情
@@ -51,7 +71,8 @@ var listCmd = &cobra.Command{
 
 		fmt.Println(yellow("快速开始:"))
 		fmt.Printf("  %s\n", gray("ccm add <name> --key \"your-api-key\""))
-		fmt.Printf("  %s\n", gray("ccm run <name>"))
+		fmt.Printf("  %s\n", gray("ccm default <name>  # 设置默认供应商"))
+		fmt.Printf("  %s\n", gray("ccm run             # 使用默认供应商启动"))
 		fmt.Println()
 	},
 }
