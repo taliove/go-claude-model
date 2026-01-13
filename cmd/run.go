@@ -15,8 +15,9 @@ import (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run [name]",
-	Short: "使用指定供应商启动 Claude Code",
+	Use:     "run [name]",
+	Aliases: []string{"r"},
+	Short:   "使用指定供应商启动 Claude Code",
 	Long: `使用指定供应商启动 Claude Code
 
 如果不指定供应商名称，则使用默认供应商。
@@ -100,7 +101,10 @@ var runCmd = &cobra.Command{
 		// 设置独立的配置目录
 		home, _ := os.UserHomeDir()
 		configDir := filepath.Join(home, "claude-model", "configs", ".claude-"+name)
-		_ = os.MkdirAll(configDir, 0755)
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "%s 创建配置目录失败: %v\n", red("错误:"), err)
+			os.Exit(1)
+		}
 		os.Setenv("CLAUDE_CONFIG_DIR", configDir)
 
 		// 获取剩余参数传递给 claude

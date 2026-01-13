@@ -15,11 +15,35 @@ INSTALL_DIR="${CCM_INSTALL_DIR:-$HOME/.local/bin}"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+
+# Check dependencies
+check_dependencies() {
+    echo ""
+    log_info "Checking dependencies..."
+
+    # Check npm
+    if command -v npm &> /dev/null; then
+        log_success "npm is installed"
+    else
+        log_warn "npm is not installed"
+        echo "  Install Node.js: https://nodejs.org/"
+    fi
+
+    # Check claude
+    if command -v claude &> /dev/null; then
+        log_success "claude-code is installed"
+    else
+        log_warn "claude-code is not installed"
+        echo "  Install: npm install -g @anthropic-ai/claude-code"
+    fi
+}
 
 # Detect OS and architecture
 detect_platform() {
@@ -97,7 +121,25 @@ main() {
     fi
 
     echo ""
-    log_success "Installation complete! Run 'ccm --help' to get started."
+    echo "=========================================="
+    echo "  Getting Started"
+    echo "=========================================="
+    echo ""
+    echo "1. Run initial setup:"
+    echo "   ccm init"
+    echo ""
+    echo "2. Configure a provider:"
+    echo "   ccm add doubao --key \"your-api-key\""
+    echo ""
+    echo "3. Start Claude Code:"
+    echo "   ccm run doubao"
+    echo ""
+
+    # Check dependencies
+    check_dependencies
+
+    echo ""
+    log_success "Installation complete!"
 }
 
 main

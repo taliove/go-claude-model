@@ -88,8 +88,16 @@ release:
     curl -fsSL https://raw.githubusercontent.com/taliove/go-claude-model/main/scripts/install.sh | bash
     ```
 
+    ### Quick Install (Windows PowerShell)
+    ```powershell
+    iwr -useb https://raw.githubusercontent.com/taliove/go-claude-model/main/scripts/install.ps1 | iex
+    ```
+
     ### Manual Download
     Download the appropriate binary for your platform from the assets below.
+
+    ## Quick Start
+    After installation, run `ccm init` to configure your first provider.
 
 brews:
   - repository:

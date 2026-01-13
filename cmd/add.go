@@ -19,8 +19,9 @@ var (
 )
 
 var addCmd = &cobra.Command{
-	Use:   "add <name>",
-	Short: "添加或配置供应商",
+	Use:     "add <name>",
+	Aliases: []string{"a"},
+	Short:   "添加或配置供应商",
 	Long: `添加或配置供应商
 
 预置供应商只需提供 --key:

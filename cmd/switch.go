@@ -14,8 +14,9 @@ import (
 )
 
 var switchCmd = &cobra.Command{
-	Use:   "switch",
-	Short: "交互式切换供应商",
+	Use:     "switch",
+	Aliases: []string{"sw"},
+	Short:   "交互式切换供应商",
 	Long: `交互式切换供应商
 
 显示所有供应商列表，选择后直接启动 Claude Code`,
@@ -98,7 +99,10 @@ var switchCmd = &cobra.Command{
 		input = strings.TrimSpace(input)
 
 		var selectedIdx int
-		_, _ = fmt.Sscanf(input, "%d", &selectedIdx)
+		if _, err := fmt.Sscanf(input, "%d", &selectedIdx); err != nil {
+			fmt.Println("请输入有效的数字")
+			os.Exit(1)
+		}
 
 		if selectedIdx < 1 || selectedIdx > len(allProviders) {
 			fmt.Println("无效的选择")

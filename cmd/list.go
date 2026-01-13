@@ -11,9 +11,10 @@ import (
 )
 
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "列出所有供应商",
-	Long:  "显示所有预置的供应商及其配置状态",
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "列出所有供应商",
+	Long:    "显示所有预置的供应商及其配置状态",
 	Run: func(cmd *cobra.Command, args []string) {
 		green := color.New(color.FgGreen).SprintFunc()
 		red := color.New(color.FgRed).SprintFunc()

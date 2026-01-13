@@ -111,7 +111,10 @@ var initCmd = &cobra.Command{
 		input = strings.TrimSpace(input)
 
 		var selectedIdx int
-		_, _ = fmt.Sscanf(input, "%d", &selectedIdx)
+		if _, err := fmt.Sscanf(input, "%d", &selectedIdx); err != nil {
+			fmt.Println("请输入有效的数字")
+			return
+		}
 
 		if selectedIdx < 1 || selectedIdx > len(presets) {
 			fmt.Println("无效的选择")

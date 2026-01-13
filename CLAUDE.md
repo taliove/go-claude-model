@@ -1,49 +1,63 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+CCM (Claude Code Manager) - 管理 Claude Code 多模型供应商的 CLI 工具。
 
-## Project Overview
-
-CCM (Claude Code Manager) is a CLI tool written in Go for managing multiple AI model providers for Claude Code. It allows switching between providers (Doubao, DeepSeek, Qwen, Kimi, SiliconFlow, GLM) without manually modifying configuration files.
-
-## Commands
+## 常用命令
 
 ```bash
-# Build
-go build -o ccm .
-
-# Run tests
-go test ./...
-
-# Format code
-go fmt ./...
-
-# Tidy dependencies
-go mod tidy
-
-# Run CLI
-./ccm --help
-./ccm list              # List all providers
-./ccm add <name> --key "your-api-key"  # Configure a provider
-./ccm run <name>        # Launch Claude with provider
-./ccm generate          # Generate shell scripts
+go build -o ccm .     # 构建
+go test ./...         # 测试
+go fmt ./...          # 格式化
+./ccm list            # 列出供应商
+./ccm add <name> --key "key"  # 添加供应商
+./ccm run <name>      # 启动 Claude
 ```
 
-## Architecture
+## 项目结构
 
-- **cmd/**: Cobra command implementations (add.go, generate.go, list.go, root.go, run.go)
-- **internal/config/**: YAML configuration management (~/.claude-model/configs/providers.yaml)
-- **internal/provider/**: Provider presets and struct definitions
+- `cmd/` - CLI 命令实现
+- `internal/config/` - 配置管理
+- `internal/provider/` - 供应商定义
 
-### Key Patterns
+## Git 规范
 
-1. **Provider Abstraction**: Providers have Name, DisplayName, APIKey, BaseURL, Model, KeyURL
-2. **Environment Injection**: Sets `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, `ANTHROPIC_MODEL` before exec
-3. **Isolated Configs**: Each provider gets `~/.claude-model/configs/.claude-<provider>/` directory
-4. **Preset Providers**: 6 pre-configured providers in internal/provider/provider.go
+提交信息格式：`<type>: <description>`
 
-### Configuration
+类型：
+- `feat` - 新功能
+- `fix` - 修复 bug
+- `refactor` - 重构
+- `test` - 测试相关
+- `docs` - 文档更新
 
-- User config: `~/.claude-model/configs/providers.yaml`
-- Generated scripts: `~/claude-model/bin/claude-<provider>`
-- Claude executable lookup: `~/claude-model/node_modules/.bin/claude` (local) or $PATH (global)
+示例：`feat: 添加新供应商支持`
+
+## 开发流程 (TDD)
+
+1. 先写测试 (`*_test.go`)
+2. 运行测试确认失败
+3. 编写最小实现代码
+4. 运行测试确认通过
+5. 重构优化
+
+## 发布流程
+
+发布新版本前**必须**完成以下检查：
+
+```bash
+go fmt ./...              # 1. 代码格式化
+golangci-lint run         # 2. Lint 检查（必须通过）
+go test ./...             # 3. 所有测试必须通过
+goreleaser check          # 4. 验证发布配置
+```
+
+发布命令：
+
+```bash
+./scripts/release.sh <version>  # 例如: ./scripts/release.sh 0.4.0
+```
+
+注意：
+- 版本号遵循语义化版本 (SemVer)
+- CI 流水线会自动验证 lint 和测试
+- **lint 不通过会阻塞发布**
