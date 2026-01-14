@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"ccm/internal/config"
+	"ccm/internal/ui"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -26,7 +26,6 @@ var removeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
 		green := color.New(color.FgGreen).SprintFunc()
-		yellow := color.New(color.FgYellow).SprintFunc()
 		red := color.New(color.FgRed).SprintFunc()
 
 		// 加载配置
@@ -45,10 +44,8 @@ var removeCmd = &cobra.Command{
 
 		// 确认删除
 		if !forceRemove {
-			fmt.Printf("%s 确认删除供应商 '%s' (%s)? [y/N]: ", yellow("⚠️"), name, p.DisplayName)
-			reader := bufio.NewReader(os.Stdin)
-			input, _ := reader.ReadString('\n')
-			if input != "y\n" && input != "Y\n" {
+			label := fmt.Sprintf("确认删除供应商 '%s' (%s)?", name, p.DisplayName)
+			if !ui.PromptConfirm(label) {
 				fmt.Println("已取消")
 				os.Exit(0)
 			}

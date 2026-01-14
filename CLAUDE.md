@@ -107,6 +107,137 @@ docs: update README installation guide
 - Uses `promptui` for arrow-key selection
 - Masked input for API keys
 
+## Go Coding Standards
+
+### Error Handling
+
+- **Never ignore errors**: All `err` values must be checked
+- **Wrap errors with context**: Use `fmt.Errorf("operation failed: %w", err)`
+- **Return early on errors**: Avoid deep nesting
+
+```go
+// Good
+if err := doSomething(); err != nil {
+    return fmt.Errorf("failed to do something: %w", err)
+}
+
+// Bad - never do this
+_ = doSomething()
+```
+
+### Concurrency
+
+- **Graceful shutdown**: All goroutines must exit via `context.Context` or channel signals
+- **Avoid goroutine leaks**: Always ensure goroutines can terminate
+- **Use sync primitives properly**: Protect shared state with mutexes or channels
+
+```go
+// Good
+func worker(ctx context.Context) {
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case task := <-taskChan:
+            process(task)
+        }
+    }
+}
+```
+
+### Comments
+
+- **Exported symbols**: All exported functions, types, and variables must have comments
+- **Comment format**: Start with the symbol name (Go convention)
+
+```go
+// Provider represents an AI model provider configuration.
+type Provider struct { ... }
+
+// NewProvider creates a new Provider with the given options.
+func NewProvider(opts ...Option) *Provider { ... }
+```
+
+### Project Structure
+
+Follow standard Go project layout:
+
+- `/cmd` - Main applications
+- `/internal` - Private application code (not importable)
+- `/pkg` - Public library code (if needed)
+- `/docs` - Documentation (translations)
+
+## Documentation & Language Policy
+
+### Primary Language
+
+- **All source code**: English (comments, variable names, commit messages)
+- **All documentation in root**: English (README.md, CLAUDE.md, CONTRIBUTING.md)
+- **Git commits**: English only
+
+### Internationalization (i18n)
+
+Translations are stored in `/docs` with language suffix:
+
+```
+docs/
+├── README_zh-CN.md        # Chinese (Simplified)
+├── CONTRIBUTING_zh-CN.md  # Chinese (Simplified)
+├── README_ja.md           # Japanese (if needed)
+└── ...
+```
+
+**Naming convention**: `<FILENAME>_<LANG-CODE>.md`
+
+| Language | Code |
+|----------|------|
+| Chinese (Simplified) | `zh-CN` |
+| Chinese (Traditional) | `zh-TW` |
+| Japanese | `ja` |
+| Korean | `ko` |
+
+### Translation Guidelines
+
+1. Keep translations in sync with English source
+2. Do not translate code examples
+3. Maintain consistent terminology across translations
+
+## Safety Rules (--dangerously-allow-all-tools)
+
+When `--dangerously-allow-all-tools` is enabled, strictly follow these guidelines:
+
+### Git Pre-check
+
+Before any multi-file refactoring or deletion:
+- Verify Git working directory is clean (no uncommitted changes)
+- Run `git status` to confirm
+
+### Incremental Changes
+
+- **Max 5 core files per change**: Never modify more than 5 business-critical files at once
+- **Split complex refactors**: Break into smaller steps
+- **Test after each step**: Run tests before proceeding
+
+### Mandatory Testing
+
+```bash
+# After any code change
+go test ./...
+```
+
+- **On test failure**: Immediately rollback or fix
+- **Never continue**: Do not modify other files while tests are failing
+
+### Forbidden Commands
+
+- `rm -rf` and similar irreversible bulk deletions are **strictly prohibited**
+- Use safe alternatives or manual confirmation for destructive operations
+
+### Execution Logging
+
+- Provide brief summary for each automated step
+- Enable user to trace actions after the fact
+
 ## Quality Standards
 
 ### Before Every Commit
