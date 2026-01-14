@@ -1,189 +1,151 @@
 # Contributing to CCM
 
-## 开发环境
+[中文版](docs/CONTRIBUTING_zh-CN.md)
 
-### 依赖
+Thank you for your interest in contributing to CCM!
+
+## Development Setup
+
+### Prerequisites
 
 - Go 1.21+
-- golangci-lint (可选，用于本地 lint)
-- goreleaser (可选，用于本地测试发布)
+- golangci-lint (optional, for local linting)
+- goreleaser (optional, for local release testing)
 
-### 快速开始
+### Quick Start
 
 ```bash
-# 克隆仓库
+# Clone the repository
 git clone https://github.com/taliove/go-claude-model.git
 cd go-claude-model
 
-# 编译
+# Install dev dependencies
+make deps
+
+# Build
 make build
 
-# 运行
-./ccm --help
+# Run
+./bin/ccm --help
 ```
 
-## 常用命令
+## Build Commands
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Build binary |
+| `make dev` | Build with debug symbols |
+| `make test` | Run tests |
+| `make lint` | Run linter |
+| `make fmt` | Format code |
+| `make verify` | Run all checks (fmt + lint + test) |
+| `make install` | Install to ~/.local/bin |
+| `make help` | Show all targets |
+
+## Code Style
+
+We follow standard Go conventions:
+
+- Run `make fmt` before committing
+- All code must pass `golangci-lint`
+- Use meaningful variable and function names
+- Keep functions focused and small
+
+## Commit Guidelines
+
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
-# 编译（输出到项目根目录）
-make build
-
-# 运行测试
-make test
-
-# 代码格式化
-make fmt
-
-# 运行 linter
-make lint
-
-# 整理依赖
-make tidy
-
-# 安装到 ~/.local/bin
-make install
-
-# 安装到 /usr/local/bin（需要 sudo）
-sudo make install-global
-
-# 清理构建产物
-make clean
-
-# 查看所有命令
-make help
-```
-
-## 提交规范
-
-使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
-
-```bash
-# 新功能
+# New feature
 git commit -m "feat: add new provider support"
-git commit -m "feat(config): add timeout option"
 
-# Bug 修复
+# Bug fix
 git commit -m "fix: resolve config loading issue"
 
-# 性能优化
-git commit -m "perf: optimize provider lookup"
-
-# 重构
+# Refactoring
 git commit -m "refactor: simplify config parser"
 
-# 文档
+# Documentation
 git commit -m "docs: update README"
 
-# 测试
+# Tests
 git commit -m "test: add config tests"
 ```
 
-这些提交信息会自动生成 CHANGELOG。
+These messages are used to auto-generate the CHANGELOG.
 
-## 发布流程
+## Pull Request Process
 
-### 准备发布
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feat/my-feature`
+3. Make your changes
+4. Run checks: `make verify`
+5. Commit with conventional commit message
+6. Push and create a Pull Request
 
-```bash
-# 运行发布脚本（会自动执行预检查）
-./scripts/release.sh 0.3.0
+## Release Process
 
-# 预检查包括：
-# - 验证版本格式
-# - 检查工作目录干净
-# - 检查 tag 不存在
-# - 运行测试
-# - 运行 linter (如果安装了 golangci-lint)
-# - 验证 GoReleaser 配置 (如果安装了 goreleaser)
-```
-
-### 自动化流程
-
-推送 tag 后，GitHub Actions 会自动：
-
-1. 再次运行测试和 lint（失败则阻止发布）
-2. 使用 GoReleaser 构建 6 个平台的二进制
-3. 生成 CHANGELOG
-4. 创建 GitHub Release
-5. 更新 Homebrew formula
-
-### 本地测试发布
+### Before Release
 
 ```bash
-# 安装 goreleaser
-go install github.com/goreleaser/goreleaser/v2@latest
+# Run all checks
+make verify
 
-# 本地测试构建（不会真正发布）
+# Test release locally
 make release-local
-
-# 验证 GoReleaser 配置
-make check
 ```
 
-### 手动发布（本地执行 GoReleaser）
-
-如果你想跳过 GitHub Actions，在本地直接执行 GoReleaser 发布：
+### Creating a Release
 
 ```bash
-# 1. 确保代码已提交且工作目录干净
-git status
+# Run release script
+./scripts/release.sh <version>
 
-# 2. 创建并推送 tag
-git tag -a v0.3.0 -m "Release v0.3.0"
-git push origin v0.3.0
+# Push to trigger CI
+git push origin main v<version>
+```
 
-# 3. 设置 GitHub Token（需要 repo 权限）
-export GITHUB_TOKEN="your-github-token"
+GitHub Actions will automatically:
+1. Run tests and lint
+2. Build binaries for all platforms
+3. Generate CHANGELOG
+4. Create GitHub Release
+5. Update Homebrew formula
 
-# 4. 执行发布
+### Local Release (Advanced)
+
+```bash
+# Set GitHub token
+export GITHUB_TOKEN="your-token"
+
+# Run GoReleaser
 goreleaser release --clean
-
-# 或者如果不想更新 Homebrew formula：
-goreleaser release --clean --skip=homebrew
 ```
 
-**注意事项：**
-- 需要先创建 GitHub Personal Access Token (PAT)，权限需要包含 `repo`
-- 如果要更新 Homebrew formula，需要对仓库有写权限
-- 本地发布会跳过 GitHub Actions 的预检查，请确保已运行 `make test` 和 `make lint`
-
-**快速发布脚本：**
-
-```bash
-# 一键发布（需要提前设置 GITHUB_TOKEN 环境变量）
-./scripts/release.sh 0.3.0  # 创建 tag
-GITHUB_TOKEN=xxx goreleaser release --clean  # 本地发布
-```
-
-## 项目结构
+## Project Structure
 
 ```
 .
-├── cmd/                    # CLI 命令实现
-│   ├── root.go
-│   ├── add.go
-│   ├── list.go
-│   ├── run.go
-│   ├── generate.go
-│   └── version.go
+├── cmd/                    # CLI commands (Cobra)
 ├── internal/
-│   ├── config/             # 配置管理
-│   ├── provider/           # Provider 定义
-│   └── version/            # 版本信息
+│   ├── config/             # Configuration management
+│   ├── provider/           # Provider definitions
+│   └── ui/                 # UI components (promptui)
 ├── scripts/
-│   ├── release.sh          # 发布脚本
-│   └── install.sh          # 安装脚本
+│   ├── release.sh          # Release script
+│   └── install.sh          # Installation script
 ├── .github/workflows/
-│   ├── ci.yml              # CI 工作流（PR/push）
-│   └── release.yml         # 发布工作流（tag）
-├── .goreleaser.yml         # GoReleaser 配置
-├── .golangci.yml           # Linter 配置
-└── Makefile                # 构建命令
+│   ├── ci.yml              # CI workflow
+│   └── release.yml         # Release workflow
+├── .goreleaser.yaml        # GoReleaser config
+├── .golangci.yml           # Linter config
+└── Makefile                # Build automation
 ```
 
-## 添加新 Provider
+## Adding New Providers
 
-1. 编辑 `internal/provider/provider.go`
-2. 在 `Presets` map 中添加新的 provider 配置
-3. 运行测试确保没有问题
-4. 提交：`git commit -m "feat(provider): add XXX provider"`
+1. Edit `internal/provider/preset.go`
+2. Add new provider to `Presets` map
+3. Add provider name to `PresetOrder` slice
+4. Run tests: `make test`
+5. Commit: `git commit -m "feat(provider): add XXX provider"`

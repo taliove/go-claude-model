@@ -1,63 +1,130 @@
 # CLAUDE.md
 
-CCM (Claude Code Manager) - 管理 Claude Code 多模型供应商的 CLI 工具。
+CCM (Claude Code Manager) - A CLI tool for managing multiple AI model providers with Claude Code.
 
-## 常用命令
+## Quick Commands
 
-```bash
-go build -o ccm .     # 构建
-go test ./...         # 测试
-go fmt ./...          # 格式化
-./ccm list            # 列出供应商
-./ccm add <name> --key "key"  # 添加供应商
-./ccm run <name>      # 启动 Claude
-```
+| Command | Description |
+|---------|-------------|
+| `make build` | Build for development |
+| `make dev` | Build with debug symbols |
+| `make verify` | Run all checks (fmt + lint + test) |
+| `make install` | Install to ~/.local/bin |
+| `make help` | Show all available targets |
 
-## 项目结构
+## Development Workflow
 
-- `cmd/` - CLI 命令实现
-- `internal/config/` - 配置管理
-- `internal/provider/` - 供应商定义
-
-## Git 规范
-
-提交信息格式：`<type>: <description>`
-
-类型：
-- `feat` - 新功能
-- `fix` - 修复 bug
-- `refactor` - 重构
-- `test` - 测试相关
-- `docs` - 文档更新
-
-示例：`feat: 添加新供应商支持`
-
-## 开发流程 (TDD)
-
-1. 先写测试 (`*_test.go`)
-2. 运行测试确认失败
-3. 编写最小实现代码
-4. 运行测试确认通过
-5. 重构优化
-
-## 发布流程
-
-发布新版本前**必须**完成以下检查：
+### Daily Development
 
 ```bash
-go fmt ./...              # 1. 代码格式化
-golangci-lint run         # 2. Lint 检查（必须通过）
-go test ./...             # 3. 所有测试必须通过
-goreleaser check          # 4. 验证发布配置
+# 1. Build with debug symbols
+make dev
+
+# 2. Test locally
+./bin/ccm list
+./bin/ccm switch
+
+# 3. Run all checks before commit
+make verify
 ```
 
-发布命令：
+### Before Commit
 
 ```bash
-./scripts/release.sh <version>  # 例如: ./scripts/release.sh 0.4.0
+make verify  # Runs: fmt + lint + test
 ```
 
-注意：
-- 版本号遵循语义化版本 (SemVer)
-- CI 流水线会自动验证 lint 和测试
-- **lint 不通过会阻塞发布**
+### Release
+
+```bash
+./scripts/release.sh <version>
+git push origin main v<version>
+```
+
+## Project Structure
+
+```
+ccm/
+├── cmd/                    # CLI commands (Cobra)
+│   ├── root.go            # Root command
+│   ├── add.go             # Add provider
+│   ├── run.go             # Run Claude Code
+│   ├── list.go            # List providers
+│   ├── switch.go          # Interactive switch
+│   └── ...
+├── internal/
+│   ├── config/            # Configuration management
+│   ├── provider/          # Provider definitions
+│   └── ui/                # UI components (promptui)
+├── scripts/
+│   ├── install.sh         # Installation script
+│   └── release.sh         # Release script
+├── Makefile               # Build automation
+└── .goreleaser.yaml       # Release configuration
+```
+
+## Git Conventions
+
+### Commit Message Format
+
+```
+<type>: <description>
+```
+
+### Types
+
+| Type | Description |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `refactor` | Code refactoring |
+| `test` | Test related |
+| `docs` | Documentation |
+| `chore` | Maintenance |
+
+### Examples
+
+```
+feat: add new provider support
+fix: resolve API key validation issue
+docs: update README installation guide
+```
+
+## Architecture Notes
+
+### Provider System
+
+- Providers defined in `internal/provider/preset.go`
+- Types: `TypeDirect` (official API) or `TypeProxy` (third-party)
+
+### Configuration
+
+- Config file: `~/.config/ccm/config.yaml`
+- Environment variables: `CCM_<PROVIDER>_API_KEY`
+
+### Interactive UI
+
+- Uses `promptui` for arrow-key selection
+- Masked input for API keys
+
+## Quality Standards
+
+### Before Every Commit
+
+```bash
+make verify
+```
+
+This runs:
+1. `go fmt ./...` - Code formatting
+2. `golangci-lint run` - Linting (must pass)
+3. `go test -v -race ./...` - Tests with race detection
+
+**Note: Lint failures will block releases.**
+
+## Release Checklist
+
+1. Run all checks: `make verify`
+2. Validate config: `make check`
+3. Release: `./scripts/release.sh <version>`
+4. Push: `git push origin main v<version>`

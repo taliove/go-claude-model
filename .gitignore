@@ -1,7 +1,7 @@
 # CCM .gitignore
 
 # Binary
-ccm
+bin/
 
 # IDE
 .vscode/
@@ -23,3 +23,7 @@ Thumbs.db
 # Build artifacts
 coverage.out
 dist/
+
+# Local config
+.claude/
+package-lock.json

@@ -7,23 +7,35 @@
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 BINDIR_INSTALL ?= $(HOME)/.local/bin
+BINARY ?= bin/ccm
 
 # ===========================================
 # Build Targets
 # ===========================================
 
-.PHONY: all build clean install uninstall install-global uninstall-global \
-        test lint fmt tidy release-local check help
+.PHONY: all build dev run clean install uninstall install-global uninstall-global \
+        test lint fmt tidy verify ci coverage deps release-local check help
 
 all: build
 
 # Local build (for development)
 build:
-	go build -o ccm .
+	@mkdir -p bin
+	go build -o $(BINARY) .
+
+# Development build (with debug symbols, no optimization)
+dev:
+	@mkdir -p bin
+	go build -gcflags="all=-N -l" -o $(BINARY) .
+
+# Quick run (build and execute)
+run: build
+	./$(BINARY) $(ARGS)
 
 clean:
-	rm -f ccm
+	rm -rf bin
 	rm -rf dist
+	rm -f coverage.out coverage.html
 
 # ===========================================
 # Testing & Quality
@@ -41,6 +53,25 @@ fmt:
 tidy:
 	go mod tidy
 
+# One-click verification (for local development)
+verify: fmt lint test
+
+# Simulate CI environment
+ci: tidy verify
+
+# Test coverage report
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+# Install development dependencies
+deps:
+	@echo "Installing development dependencies..."
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/goreleaser/goreleaser/v2@latest
+	@echo "Done!"
+
 # ===========================================
 # Installation
 # ===========================================
@@ -49,7 +80,7 @@ tidy:
 install: build
 	@echo "Installing CCM to $(BINDIR_INSTALL)..."
 	install -d $(BINDIR_INSTALL)
-	install -m 755 ccm $(BINDIR_INSTALL)/ccm
+	install -m 755 $(BINARY) $(BINDIR_INSTALL)/ccm
 	@echo ""
 	@echo "CCM installed successfully!"
 
@@ -60,7 +91,7 @@ uninstall:
 install-global: build
 	@echo "Installing CCM globally to $(BINDIR)..."
 	install -d $(BINDIR)
-	install -m 755 ccm $(BINDIR)/ccm
+	install -m 755 $(BINARY) $(BINDIR)/ccm
 	@echo "CCM installed to $(BINDIR)/ccm"
 
 uninstall-global:
@@ -87,6 +118,8 @@ help:
 	@echo ""
 	@echo "  Build:"
 	@echo "    build          - Build binary for local development"
+	@echo "    dev            - Build with debug symbols (for debugging)"
+	@echo "    run            - Build and run (use ARGS= for arguments)"
 	@echo "    clean          - Remove build artifacts"
 	@echo ""
 	@echo "  Quality:"
@@ -94,6 +127,12 @@ help:
 	@echo "    lint           - Run linter"
 	@echo "    fmt            - Format code"
 	@echo "    tidy           - Tidy go.mod"
+	@echo "    verify         - Run all checks (fmt + lint + test)"
+	@echo "    ci             - Simulate CI (tidy + verify)"
+	@echo "    coverage       - Generate test coverage report"
+	@echo ""
+	@echo "  Setup:"
+	@echo "    deps           - Install development dependencies"
 	@echo ""
 	@echo "  Install:"
 	@echo "    install        - Install to ~/.local/bin"
