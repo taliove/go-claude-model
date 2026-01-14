@@ -23,6 +23,53 @@ log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 
+# Detect current shell and config file
+detect_shell_config() {
+    local shell_name
+    shell_name=$(basename "$SHELL")
+
+    case "$shell_name" in
+        zsh)
+            if [ -f "$HOME/.zshrc" ]; then
+                echo "$HOME/.zshrc"
+            else
+                echo "$HOME/.zprofile"
+            fi
+            ;;
+        bash)
+            if [ -f "$HOME/.bashrc" ]; then
+                echo "$HOME/.bashrc"
+            elif [ -f "$HOME/.bash_profile" ]; then
+                echo "$HOME/.bash_profile"
+            else
+                echo "$HOME/.profile"
+            fi
+            ;;
+        *)
+            echo "$HOME/.profile"
+            ;;
+    esac
+}
+
+# Configure PATH automatically
+configure_path() {
+    local config_file="$1"
+    local path_line="export PATH=\"$INSTALL_DIR:\$PATH\""
+
+    # Check if already configured
+    if grep -q "$INSTALL_DIR" "$config_file" 2>/dev/null; then
+        log_info "PATH already configured in $config_file"
+        return 0
+    fi
+
+    echo "" >> "$config_file"
+    echo "# CCM - Claude Code Manager" >> "$config_file"
+    echo "$path_line" >> "$config_file"
+
+    log_success "PATH configured in $config_file"
+    log_info "Run: source $config_file"
+}
+
 # Check dependencies
 check_dependencies() {
     echo ""
@@ -113,11 +160,14 @@ main() {
 
     log_success "CCM installed to $INSTALL_DIR/$BINARY_NAME"
 
-    # Check PATH
+    # Configure PATH automatically
     if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
         echo ""
-        log_info "Add to your PATH:"
-        echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+        log_info "Configuring PATH..."
+        SHELL_CONFIG=$(detect_shell_config)
+        configure_path "$SHELL_CONFIG"
+    else
+        log_success "PATH already includes $INSTALL_DIR"
     fi
 
     echo ""

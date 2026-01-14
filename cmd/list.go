@@ -75,6 +75,14 @@ var listCmd = &cobra.Command{
 		fmt.Printf("  %s\n", gray("ccm default <name>  # 设置默认供应商"))
 		fmt.Printf("  %s\n", gray("ccm run             # 使用默认供应商启动"))
 		fmt.Println()
+
+		fmt.Println(yellow("管理命令:"))
+		fmt.Printf("  %s\n", gray("ccm show <name>     # 查看供应商详情"))
+		fmt.Printf("  %s\n", gray("ccm test <name>     # 测试 API 连接"))
+		fmt.Printf("  %s\n", gray("ccm edit <name>     # 编辑供应商配置"))
+		fmt.Printf("  %s\n", gray("ccm remove <name>   # 删除供应商"))
+		fmt.Printf("  %s\n", gray("ccm switch          # 交互式切换供应商"))
+		fmt.Println()
 	},
 }
 

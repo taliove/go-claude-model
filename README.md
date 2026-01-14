@@ -1,139 +1,125 @@
-# CCM (Claude Code Manager)
+<div align="center">
 
-CCM 是一个用于管理 Claude Code 多模型供应商的命令行工具。通过 CCM，您可以轻松在不同 AI 模型供应商之间切换，无需手动修改配置。
+# CCM
 
-## 功能特性
+**Claude Code Manager**
 
-- **多供应商支持**: 支持豆包、DeepSeek、通义千问、Kimi、硅基流动、GLM 等主流 AI 模型提供商
-- **快速切换**: 一键切换不同供应商，快速比较不同模型效果
-- **配置管理**: 统一管理各供应商的 API Key 和配置
-- **脚本生成**: 自动生成各供应商的启动脚本
-- **安全存储**: API Key 安全存储，支持环境变量覆盖
+Seamlessly switch between AI model providers for Claude Code
 
-## 安装
+[![Go Version](https://img.shields.io/github/go-mod/go-version/taliove/go-claude-model)](https://go.dev/)
+[![Release](https://img.shields.io/github/v/release/taliove/go-claude-model)](https://github.com/taliove/go-claude-model/releases)
+[![License](https://img.shields.io/github/license/taliove/go-claude-model)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/taliove/go-claude-model)](https://goreportcard.com/report/github.com/taliove/go-claude-model)
+[![CI](https://github.com/taliove/go-claude-model/actions/workflows/ci.yml/badge.svg)](https://github.com/taliove/go-claude-model/actions)
 
-### 方式一: 从源码安装
+**English** | [简体中文](docs/README_zh-CN.md)
 
-```bash
-# 克隆仓库
-git clone https://github.com/taliove/go-claude-model.git
-cd go-claude-model
+</div>
 
-# 本地安装 (推荐)
-make install
+---
 
-# 或全局安装到 /usr/local/bin
-sudo make install-global
-```
-
-### 方式二: 直接下载二进制
+## Quick Install
 
 ```bash
-# 下载最新版本
-curl -L https://github.com/taliove/go-claude-model/releases/latest/download/ccm -o ccm
-
-# 添加执行权限
-chmod +x ccm
-
-# 移动到 PATH
-sudo mv ccm /usr/local/bin/
+curl -fsSL https://raw.githubusercontent.com/taliove/go-claude-model/main/scripts/install.sh | bash
 ```
 
-## 使用方法
-
-### 首次配置
+## Quick Start
 
 ```bash
-# 启动引导
-ccm init
+ccm init                        # 1. Setup wizard
+ccm add doubao --key "your-key" # 2. Add provider
+ccm run doubao                  # 3. Launch Claude Code
 ```
 
-### 基本命令
+## Features
+
+| | Feature | Description |
+|---|---------|-------------|
+| ⚡ | **One-Click Switch** | Switch between providers instantly |
+| 🔐 | **Secure Storage** | API keys stored safely with env var support |
+| 🌐 | **Multi-Provider** | Doubao, DeepSeek, Qwen, Kimi, GLM, and more |
+| 📜 | **Script Generation** | Auto-generate launch scripts for each provider |
+| 🔧 | **Custom Providers** | Add any OpenAI-compatible API endpoint |
+
+## Supported Providers
+
+| Provider | Name | Default Model |
+|----------|------|---------------|
+| `doubao` | Doubao (ByteDance) | doubao-seed-code-preview-latest |
+| `deepseek` | DeepSeek | deepseek-chat |
+| `qwen` | Qwen (Alibaba) | qwen-plus |
+| `kimi` | Kimi (Moonshot) | moonshot-v1-8k |
+| `siliconflow` | SiliconFlow | deepseek-chat |
+| `glm` | GLM (Zhipu AI) | glm-4 |
+| `wanjie` | Wanjie | - |
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `ccm init` | Interactive setup wizard |
+| `ccm list` | List all configured providers |
+| `ccm add <name> --key "key"` | Add or configure a provider |
+| `ccm edit <name> --key "key"` | Update provider configuration |
+| `ccm run <name>` | Launch Claude Code with provider |
+| `ccm switch` | Interactive provider switching |
+| `ccm test <name>` | Test provider connection |
+| `ccm generate` | Generate launch scripts |
+| `ccm remove <name>` | Remove a provider |
+
+## Custom Provider
 
 ```bash
-# 列出所有供应商
-ccm list
-
-# 添加/配置供应商
-ccm add doubao --key "your-api-key"
-
-# 更新供应商配置
-ccm edit doubao --key "new-api-key"
-
-# 测试供应商连接
-ccm test doubao
-
-# 启动 Claude Code
-ccm run doubao
-
-# 交互式切换供应商
-ccm switch
-
-# 删除供应商配置
-ccm remove doubao
-
-# 生成启动脚本
-ccm generate
+ccm add custom --key "your-key" --url "https://api.example.com/v1" --model "gpt-4"
 ```
 
-### 环境变量支持
+## Environment Variables
 
-支持通过环境变量设置 API Key (优先级高于配置文件):
+API keys can be set via environment variables (takes priority over config):
 
 ```bash
 export CCM_API_KEY_DOUBAO="your-api-key"
 ccm run doubao
 ```
 
-## 可用供应商
+## Alternative Installation
 
-| 名称 | 显示名称 | 默认模型 |
-|------|----------|----------|
-| doubao | 豆包（字节跳动） | doubao-seed-code-preview-latest |
-| deepseek | DeepSeek | deepseek-chat |
-| qwen | 通义千问（阿里） | qwen-plus |
-| kimi | Kimi（月之暗面） | moonshot-v1-8k |
-| siliconflow | 硅基流动 | deepseek-chat |
-| glm | GLM（智谱AI） | glm-4 |
-| wanjie | 万界 | - |
-
-## 自定义供应商
+<details>
+<summary>From Source</summary>
 
 ```bash
-ccm add custom --key "xxx" --url "https://api.example.com/v1" --model "gpt-4"
+git clone https://github.com/taliove/go-claude-model.git
+cd go-claude-model
+make install              # Install to ~/.local/bin
+# or
+sudo make install-global  # Install to /usr/local/bin
 ```
 
-## 生成启动脚本
+</details>
+
+<details>
+<summary>Binary Download</summary>
 
 ```bash
-ccm generate
+curl -L https://github.com/taliove/go-claude-model/releases/latest/download/ccm -o ccm
+chmod +x ccm
+sudo mv ccm /usr/local/bin/
 ```
 
-生成的脚本位于 `~/claude-model/bin/`，可以这样使用:
+</details>
+
+## Uninstall
 
 ```bash
-# 直接运行脚本
-~/claude-model/bin/claude-doubao
-
-# 或添加到 PATH
-export PATH="~/claude-model/bin:$PATH"
-claude-doubao
+make uninstall        # Local installation
+sudo make uninstall-global  # Global installation
 ```
 
-## 卸载
+## Contributing
 
-```bash
-# 本地安装卸载
-make uninstall
+Contributions are welcome! Please feel free to submit issues and pull requests.
 
-# 全局安装卸载
-sudo make uninstall-global
-```
+## License
 
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 许可证
-
-MIT License
+[MIT License](LICENSE)

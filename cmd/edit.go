@@ -17,8 +17,9 @@ var (
 )
 
 var editCmd = &cobra.Command{
-	Use:   "edit <name>",
-	Short: "更新供应商配置",
+	Use:     "edit <name>",
+	Aliases: []string{"set"},
+	Short:   "更新供应商配置",
 	Long: `更新供应商配置
 
 示例:
